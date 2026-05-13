@@ -5,7 +5,28 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "esbuild src/renderer.js --bundle --outfile=dist/bundle.js"
+    "build": "esbuild src/renderer.js --bundle --outfile=dist/bundle.js",
+    "dist": "npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "com.n0es.sticky-notes",
+    "productName": "StickyNotes",
+    "directories": {
+      "output": "out"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js",
+      "index.html",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    }
   },
   "keywords": [],
   "author": "",
@@ -18,6 +39,7 @@
     "marked": "^18.0.3"
   },
   "devDependencies": {
+    "electron-builder": "^26.8.1",
     "esbuild": "^0.28.0"
   }
 }
