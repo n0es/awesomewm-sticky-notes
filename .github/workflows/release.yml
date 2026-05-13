@@ -6,6 +6,9 @@ on:
       - main
     tags:
       - 'v*'
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -20,14 +23,20 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22 # Updated to match Electron requirements
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm install
 
       - name: Build and Distribute
-        run: npm run dist
+        # Only publish on tags, just build on push/PR
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            npm run dist -- --publish always
+          else
+            npm run dist -- --publish never
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -1,7 +1,7 @@
 {
   "name": "sticky-notes",
   "version": "1.0.0",
-  "description": "",
+  "description": "A high-performance sticky note app for AwesomeWM on Arch Linux, integrated with Obsidian.",
   "main": "main.js",
   "repository": {
     "type": "git",
@@ -40,17 +40,17 @@
     }
   },
   "keywords": [],
-  "author": "",
+  "author": "n0es",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "@chenglou/pretext": "^0.0.7",
     "chokidar": "^5.0.0",
-    "electron": "^42.0.1",
     "electron-updater": "^6.8.3",
     "marked": "^18.0.3"
   },
   "devDependencies": {
+    "electron": "^42.0.1",
     "electron-builder": "^26.8.1",
     "esbuild": "^0.28.0"
   }
