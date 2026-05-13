@@ -1,0 +1,215 @@
+import { materializeRichInlineLineRange, prepareRichInline, walkRichInlineLineRanges } from '@chenglou/pretext/rich-inline';
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const notePath = '/home/ethan/obsidian_vault/sticky_note.md';
+
+let preparedParagraphs = [];
+const LINE_HEIGHT = 24;
+
+function loadAndRender() {
+  const content = window.api.readNote(notePath);
+  let tokens = [];
+  try {
+     tokens = window.api.parseMarkdown(content);
+  } catch (err) {
+     console.error("Markdown parse error:", err);
+     return;
+  }
+  
+  let paragraphs = [];
+  let currentParagraph = [];
+
+  function addTextTokens(text, font) {
+    const regex = /(\[\[.*?\]\]|#[\w/-]+)/g;
+    let lastIndex = 0;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+       if (match.index > lastIndex) {
+          currentParagraph.push({ text: text.substring(lastIndex, match.index), font });
+       }
+       currentParagraph.push({ text: match[0], font, isSpecial: true });
+       lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+       currentParagraph.push({ text: text.substring(lastIndex), font });
+    }
+  }
+
+  function process(nodeList, font, indent = '') {
+    if (!nodeList) return;
+    for (let i = 0; i < nodeList.length; i++) {
+      const node = nodeList[i];
+      if (node.type === 'paragraph' || node.type === 'heading') {
+        if (currentParagraph.length > 0) {
+           paragraphs.push(currentParagraph);
+           currentParagraph = [];
+        }
+        if (indent && node.type === 'paragraph') {
+            currentParagraph.push({ text: indent, font });
+        }
+        process(node.tokens, node.type === 'heading' ? 'bold 20px monospace' : font, indent);
+        if (currentParagraph.length > 0) {
+           paragraphs.push(currentParagraph);
+           currentParagraph = [];
+        }
+      } else if (node.type === 'list') {
+         for (let j = 0; j < node.items.length; j++) {
+            const item = node.items[j];
+            if (currentParagraph.length > 0) {
+              paragraphs.push(currentParagraph);
+              currentParagraph = [];
+            }
+            const bullet = node.ordered ? `${j + 1}. ` : '• ';
+            currentParagraph.push({ text: indent + bullet, font });
+            process(item.tokens, font, indent + '   ');
+            if (currentParagraph.length > 0) {
+              paragraphs.push(currentParagraph);
+              currentParagraph = [];
+            }
+         }
+      } else if (node.type === 'checkbox') {
+         const box = node.checked ? '☑ ' : '☐ ';
+         currentParagraph.push({ text: box, font, isSpecial: true, isCheckbox: true });
+      } else if (node.type === 'strong') {
+        process(node.tokens, font.replace('normal', 'bold'), indent);
+      } else if (node.type === 'em') {
+        process(node.tokens, font.replace('normal', 'italic'), indent);
+      } else if (node.type === 'text' || node.type === 'escape' || node.type === 'link') {
+        if (node.tokens && node.tokens.length > 0) {
+           process(node.tokens, font, indent);
+        } else {
+           addTextTokens(node.text || node.raw || "", font);
+        }
+      } else if (node.type === 'space') {
+        currentParagraph.push({ text: node.raw, font });
+      } else if (node.raw) {
+        addTextTokens(node.raw, font);
+      }
+    }
+  }
+
+  process(tokens, 'normal 16px monospace');
+  
+  if (currentParagraph.length > 0) {
+    paragraphs.push(currentParagraph);
+  }
+
+  paragraphs = paragraphs.filter(p => p.length > 0);
+
+  preparedParagraphs = paragraphs.map(p => {
+     try {
+       return { items: p, prepared: prepareRichInline(p) };
+     } catch (err) {
+       console.error("Pretext prepare error:", err);
+       return null;
+     }
+  }).filter(p => p !== null);
+
+  render();
+}
+
+function render() {
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  ctx.scale(dpr, dpr);
+  
+  ctx.clearRect(0, 0, width, height);
+  ctx.textBaseline = 'top';
+  
+  let y = 30; // top padding
+  const maxWidth = width - 40; // 20px padding left and right
+
+  if (preparedParagraphs.length === 0) {
+     ctx.font = 'italic 16px monospace';
+     ctx.fillStyle = '#999999';
+     ctx.fillText('Empty note...', 20, 30);
+     return;
+  }
+
+  for (const p of preparedParagraphs) {
+    walkRichInlineLineRanges(p.prepared, maxWidth, (range) => {
+      const line = materializeRichInlineLineRange(p.prepared, range);
+      let x = 20;
+      for (const frag of line.fragments) {
+         x += frag.gapBefore;
+         
+         const item = p.items[frag.itemIndex];
+         ctx.font = item.font;
+         
+         if (item.isSpecial) {
+            if (item.isCheckbox) {
+              ctx.fillStyle = item.text.includes('☑') ? '#10b981' : '#333333';
+            } else if (item.text.startsWith('#')) {
+              ctx.fillStyle = '#10b981'; // Green for tags
+            } else {
+              ctx.fillStyle = '#8b5cf6'; // Purple for links
+            }
+         } else {
+            ctx.fillStyle = '#333333';
+         }
+
+         ctx.fillText(frag.text, x, y);
+         x += frag.occupiedWidth;
+      }
+      y += LINE_HEIGHT;
+    });
+    y += LINE_HEIGHT / 2; // Extra padding between paragraphs
+  }
+}
+
+// Watch window size
+const ro = new ResizeObserver(() => render());
+ro.observe(canvas);
+
+// Initial load
+loadAndRender();
+
+// Watch file for changes
+window.api.watchNote(notePath, () => {
+  loadAndRender();
+});
+
+// Editing Logic
+const editor = document.getElementById('editor');
+let isEditing = false;
+
+window.addEventListener('dblclick', () => {
+  if (isEditing) return;
+  isEditing = true;
+  const content = window.api.readNote(notePath);
+  editor.value = content;
+  editor.style.display = 'block';
+  canvas.style.display = 'none';
+  editor.focus();
+});
+
+editor.addEventListener('blur', () => {
+  if (!isEditing) return;
+  saveAndClose();
+});
+
+editor.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeEditor();
+  } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    saveAndClose();
+  }
+});
+
+function saveAndClose() {
+  const newContent = editor.value;
+  window.api.saveNote(notePath, newContent);
+  closeEditor();
+}
+
+function closeEditor() {
+  isEditing = false;
+  editor.style.display = 'none';
+  canvas.style.display = 'block';
+  loadAndRender(); // Ensure it re-renders immediately
+}

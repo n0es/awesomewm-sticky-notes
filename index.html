@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sticky Note</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+    }
+    #note {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      /* background will be drawn by canvas or we can set it here */
+      background: #fdf6e3; 
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    /* Draggable window area */
+    .drag-area {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 20px;
+      -webkit-app-region: drag;
+      cursor: move;
+      z-index: 10;
+    }
+    #editor {
+      position: absolute;
+      top: 30px;
+      left: 20px;
+      width: calc(100% - 40px);
+      height: calc(100% - 50px);
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: monospace;
+      font-size: 16px;
+      color: #333333;
+      display: none;
+      z-index: 5;
+    }
+  </style>
+</head>
+<body>
+  <div id="note">
+    <div class="drag-area"></div>
+    <textarea id="editor" spellcheck="false"></textarea>
+    <canvas id="canvas"></canvas>
+  </div>
+  <script src="./dist/bundle.js"></script>
+</body>
+</html>
