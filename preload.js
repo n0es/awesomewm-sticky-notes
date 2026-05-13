@@ -38,5 +38,8 @@ contextBridge.exposeInMainWorld('api', {
   getNotePath: () => {
     const arg = process.argv.find(a => a.startsWith('--note-path='));
     return arg ? arg.split('=')[1] : null;
+  },
+  getVersion: () => {
+    return process.env.npm_package_version || '1.1.0';
   }
 });
