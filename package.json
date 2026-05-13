@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n0es/awesomewm-sticky-notes.git"
+  },
   "scripts": {
     "start": "electron .",
     "build": "esbuild src/renderer.js --bundle --outfile=dist/bundle.js",
@@ -14,6 +18,13 @@
     "directories": {
       "output": "out"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "n0es",
+        "repo": "awesomewm-sticky-notes"
+      }
+    ],
     "files": [
       "dist/**/*",
       "main.js",
@@ -36,6 +47,7 @@
     "@chenglou/pretext": "^0.0.7",
     "chokidar": "^5.0.0",
     "electron": "^42.0.1",
+    "electron-updater": "^6.8.3",
     "marked": "^18.0.3"
   },
   "devDependencies": {

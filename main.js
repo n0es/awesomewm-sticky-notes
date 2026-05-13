@@ -1,5 +1,6 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const { autoUpdater } = require('electron-updater');
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -24,11 +25,14 @@ function createWindow() {
   // { rule = { class = "sticky-notes" }, properties = { floating = true, sticky = true, ontop = false } }
 
   mainWindow.loadFile('index.html');
-  mainWindow.webContents.openDevTools({ mode: 'detach' });
+  // mainWindow.webContents.openDevTools({ mode: 'detach' });
 }
 
 app.whenReady().then(() => {
   createWindow();
+  
+  // Check for updates on startup
+  autoUpdater.checkForUpdatesAndNotify();
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
