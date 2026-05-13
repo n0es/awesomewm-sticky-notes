@@ -34,5 +34,9 @@ contextBridge.exposeInMainWorld('api', {
   },
   parseMarkdown: (text) => {
     return marked.lexer(text);
+  },
+  getNotePath: () => {
+    const arg = process.argv.find(a => a.startsWith('--note-path='));
+    return arg ? arg.split('=')[1] : null;
   }
 });
