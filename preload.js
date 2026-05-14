@@ -42,6 +42,6 @@ contextBridge.exposeInMainWorld('api', {
   },
   getVersion: () => {
     const arg = process.argv.find(a => a.startsWith('--app-version='));
-    return arg ? arg.split('=')[1] : '1.6.2';
+    return arg ? arg.split('=')[1] : '1.6.4';
   }
 });

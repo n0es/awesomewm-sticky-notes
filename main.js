@@ -1,60 +1,77 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
-const crypto = require('crypto');
 const fs = require('fs');
+const crypto = require('crypto');
 
-// Default note if none provided
-const defaultNote = path.join(app.getPath('home'), 'obsidian_vault', 'sticky_note.md');
-
-// Improved arg parsing: find first non-option argument that isn't the app path
-const noteToOpen = process.argv.slice(1).find(arg => {
-  // Skip electron binary and app bundle paths
-  if (arg.includes('node_modules') || arg.endsWith('electron') || arg.endsWith('sticky-notes')) return false;
-  // Look for .md files or paths containing 'vault'
-  return !arg.startsWith('--') && (arg.endsWith('.md') || arg.includes('vault'));
-}) || defaultNote;
-
-console.error(`[Main] Opening note: "${noteToOpen}"`);
-console.error(`[Main] Argv: ${JSON.stringify(process.argv)}`);
-
-// Set unique user data path for this note to allow multiple instances
-const noteHash = crypto.createHash('md5').update(noteToOpen).digest('hex').substring(0, 8);
-const userDataPath = path.join(app.getPath('appData'), `sticky-notes-${noteHash}`);
+// Single User Data path for all instances
+const userDataPath = path.join(app.getPath('appData'), 'sticky-notes-v2');
 app.setPath('userData', userDataPath);
 
-const stateFilePath = path.join(userDataPath, 'window-state.json');
+const stateFilePath = path.join(userDataPath, 'window-states.json');
+const vaultPath = path.join(app.getPath('home'), 'obsidian_vault');
 
-function loadWindowState() {
+function getNotePathFromArgv(argv) {
+  return argv.slice(1).find(arg => {
+    if (arg.includes('node_modules') || arg.endsWith('electron') || arg.endsWith('sticky-notes')) return false;
+    return !arg.startsWith('--') && (arg.endsWith('.md') || arg.includes('vault'));
+  });
+}
+
+function loadAllWindowStates() {
   try {
     if (fs.existsSync(stateFilePath)) {
       return JSON.parse(fs.readFileSync(stateFilePath, 'utf8'));
     }
   } catch (e) {
-    console.error('Failed to load window state:', e);
+    console.error('Failed to load window states:', e);
   }
-  return {
-    width: 400,
-    height: 400,
-    x: 100 + (Math.floor(Math.random() * 5) * 50),
-    y: 100 + (Math.floor(Math.random() * 5) * 50)
-  };
+  return {};
 }
 
-function saveWindowState(state) {
+function saveWindowState(notePath, bounds) {
+  const states = loadAllWindowStates();
+  states[notePath] = bounds;
   try {
     if (!fs.existsSync(userDataPath)) {
       fs.mkdirSync(userDataPath, { recursive: true });
     }
-    fs.writeFileSync(stateFilePath, JSON.stringify(state));
+    fs.writeFileSync(stateFilePath, JSON.stringify(states));
   } catch (e) {
     console.error('Failed to save window state:', e);
   }
 }
 
-function createWindow() {
-  const state = loadWindowState();
+function createNewNoteFile() {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const fileName = `Note-${timestamp}.md`;
+  const filePath = path.join(vaultPath, fileName);
+  if (!fs.existsSync(vaultPath)) {
+    fs.mkdirSync(vaultPath, { recursive: true });
+  }
+  fs.writeFileSync(filePath, '# New Note\n\n', 'utf8');
+  return filePath;
+}
 
-  const mainWindow = new BrowserWindow({
+function openNoteWindow(notePath) {
+  // Check if window for this note is already open
+  const existingWindow = BrowserWindow.getAllWindows().find(win => {
+    return win.notePath === notePath;
+  });
+
+  if (existingWindow) {
+    existingWindow.focus();
+    return;
+  }
+
+  const states = loadAllWindowStates();
+  const state = states[notePath] || {
+    width: 400,
+    height: 400,
+    x: 100 + (Math.floor(Math.random() * 5) * 50),
+    y: 100 + (Math.floor(Math.random() * 5) * 50)
+  };
+
+  const win = new BrowserWindow({
     width: state.width,
     height: state.height,
     x: state.x,
@@ -68,26 +85,52 @@ function createWindow() {
       contextIsolation: true,
       sandbox: false,
       additionalArguments: [
-        `--note-path=${noteToOpen}`,
+        `--note-path=${notePath}`,
         `--app-version=${app.getVersion()}`
       ]
     }
   });
 
+  win.notePath = notePath;
+
   const saveState = () => {
-    const bounds = mainWindow.getBounds();
-    saveWindowState(bounds);
+    const bounds = win.getBounds();
+    saveWindowState(notePath, bounds);
   };
 
-  mainWindow.on('move', saveState);
-  mainWindow.on('resize', saveState);
+  win.on('move', saveState);
+  win.on('resize', saveState);
 
-  mainWindow.loadFile('index.html');
+  win.loadFile('index.html');
 }
 
-app.whenReady().then(() => {
-  createWindow();
-});
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine) => {
+    const notePath = getNotePathFromArgv(commandLine);
+    if (notePath) {
+      openNoteWindow(notePath);
+    } else {
+      // If no path provided, create a new blank note
+      const newNotePath = createNewNoteFile();
+      openNoteWindow(newNotePath);
+    }
+  });
+
+  app.whenReady().then(() => {
+    const notePath = getNotePathFromArgv(process.argv);
+    if (notePath) {
+      openNoteWindow(notePath);
+    } else {
+      // Initial launch with no args: open defaults
+      openNoteWindow(path.join(vaultPath, 'sticky_note.md'));
+      openNoteWindow(path.join(vaultPath, 'todo.md'));
+    }
+  });
+}
 
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
