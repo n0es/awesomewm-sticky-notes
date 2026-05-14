@@ -87,5 +87,9 @@ contextBridge.exposeInMainWorld('api', {
   getVersion: () => {
     const arg = process.argv.find(a => a.startsWith('--app-version='));
     return arg ? arg.split('=')[1] : '1.6.6';
+  },
+  getNoteColor: () => {
+    const arg = process.argv.find(a => a.startsWith('--note-color='));
+    return arg ? arg.split('=')[1] : '#fdf6e3';
   }
 });

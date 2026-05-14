@@ -292,7 +292,7 @@ const divider = () => {
 };
 
 // Initial color setup
-const argColor = window.api.getNotePath() ? (process.argv.find(a => a.startsWith('--note-color='))?.split('=')[1] || '#fdf6e3') : '#fdf6e3';
+const argColor = window.api.getNoteColor();
 const noteEl = document.getElementById('note');
 noteEl.style.background = argColor;
 
