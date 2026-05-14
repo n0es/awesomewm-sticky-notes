@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -135,32 +135,61 @@ ipcMain.on('close-note', (event, filePath) => {
   if (win) win.close();
 });
 
-const NOTE_COLORS = [
-  { name: 'Default', value: '#fdf6e3' },
-  { name: 'Yellow', value: '#fff9c4' },
-  { name: 'Green', value: '#c8e6c9' },
-  { name: 'Blue', value: '#bbdefb' },
-  { name: 'Pink', value: '#f8bbd0' },
-  { name: 'Purple', value: '#e1bee7' }
-];
+let contextMenuWin = null;
+let contextMenuParent = null;
 
-ipcMain.on('show-context-menu', (event) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  const template = [
-    { label: 'New Note', click: () => event.sender.send('context-menu-action', 'new-note') },
-    { label: 'Open Note...', click: () => event.sender.send('context-menu-action', 'open-note') },
-    { type: 'separator' },
-    ...NOTE_COLORS.map(color => ({
-      label: color.name,
-      click: () => event.sender.send('context-menu-action', 'set-color', color.value)
-    })),
-    { type: 'separator' },
-    { label: 'Hide Note', click: () => event.sender.send('context-menu-action', 'hide') },
-    { label: 'Archive Note', click: () => event.sender.send('context-menu-action', 'archive') },
-    { label: 'Delete Note', click: () => event.sender.send('context-menu-action', 'delete') }
-  ];
-  const menu = Menu.buildFromTemplate(template);
-  menu.popup({ window: win });
+ipcMain.on('show-context-menu', (event, { x, y }) => {
+  if (contextMenuWin) {
+    contextMenuWin.close();
+    contextMenuWin = null;
+  }
+
+  contextMenuParent = BrowserWindow.fromWebContents(event.sender);
+  const parentBounds = contextMenuParent.getBounds();
+  const menuX = parentBounds.x + x;
+  const menuY = parentBounds.y + y;
+
+  contextMenuWin = new BrowserWindow({
+    width: 180,
+    height: 310,
+    x: menuX,
+    y: menuY,
+    frame: false,
+    transparent: true,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    resizable: false,
+    type: 'utility',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload-menu.js')
+    }
+  });
+
+  contextMenuWin.loadFile('context-menu.html');
+
+  contextMenuWin.on('blur', () => {
+    if (contextMenuWin) {
+      contextMenuWin.close();
+      contextMenuWin = null;
+    }
+  });
+
+  contextMenuWin.on('closed', () => {
+    contextMenuWin = null;
+  });
+});
+
+ipcMain.on('context-menu-action', (event, action, data) => {
+  if (contextMenuParent && !contextMenuParent.isDestroyed()) {
+    contextMenuParent.webContents.send('context-menu-action', action, data);
+  }
+  if (contextMenuWin) {
+    contextMenuWin.close();
+    contextMenuWin = null;
+  }
+  contextMenuParent = null;
 });
 
 ipcMain.on('set-note-color', (event, { filePath, color }) => {

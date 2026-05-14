@@ -236,7 +236,7 @@ noteEl.style.background = argColor;
 // Native context menu via Electron Menu API
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
-  window.api.showContextMenu();
+  window.api.showContextMenu(e.clientX, e.clientY);
 });
 
 window.api.onContextMenuAction((action, data) => {

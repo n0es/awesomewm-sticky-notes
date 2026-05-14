@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: transparent;
+      font-family: monospace;
+      font-size: 13px;
+      user-select: none;
+      overflow: hidden;
+    }
+    #menu {
+      background: #1a1a1a;
+      border-radius: 6px;
+      padding: 4px 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .item {
+      padding: 6px 14px;
+      color: #d4d4d4;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .item:hover { background: rgba(255,255,255,0.1); }
+    .separator {
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+      margin: 4px 0;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .danger { color: #f87171; }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <div class="item" data-action="new-note">New Note</div>
+    <div class="item" data-action="open-note">Open Note...</div>
+    <div class="separator"></div>
+    <div class="item" data-action="set-color" data-color="#fdf6e3">Default <span class="dot" style="background:#fdf6e3"></span></div>
+    <div class="item" data-action="set-color" data-color="#fff9c4">Yellow <span class="dot" style="background:#fff9c4"></span></div>
+    <div class="item" data-action="set-color" data-color="#c8e6c9">Green <span class="dot" style="background:#c8e6c9"></span></div>
+    <div class="item" data-action="set-color" data-color="#bbdefb">Blue <span class="dot" style="background:#bbdefb"></span></div>
+    <div class="item" data-action="set-color" data-color="#f8bbd0">Pink <span class="dot" style="background:#f8bbd0"></span></div>
+    <div class="item" data-action="set-color" data-color="#e1bee7">Purple <span class="dot" style="background:#e1bee7"></span></div>
+    <div class="separator"></div>
+    <div class="item" data-action="hide">Hide Note</div>
+    <div class="item" data-action="archive">Archive Note</div>
+    <div class="item danger" data-action="delete">Delete Note</div>
+  </div>
+  <script>
+    document.querySelectorAll('.item').forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.dataset.action;
+        const data = item.dataset.color || null;
+        window.menuApi.selectAction(action, data);
+      });
+    });
+  </script>
+</body>
+</html>
