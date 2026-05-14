@@ -1,5 +1,6 @@
 const { contextBridge } = require('electron');
 const fs = require('fs');
+const path = require('path');
 const chokidar = require('chokidar');
 const { marked } = require('marked');
 
@@ -40,6 +41,11 @@ contextBridge.exposeInMainWorld('api', {
     return arg ? arg.split('=')[1] : null;
   },
   getVersion: () => {
-    return process.env.npm_package_version || '1.1.0';
+    try {
+      const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8'));
+      return packageJson.version;
+    } catch (e) {
+      return '1.3.0';
+    }
   }
 });

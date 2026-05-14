@@ -40,6 +40,19 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
   
+  // Enhanced auto-update logic
+  autoUpdater.logger = console;
+  autoUpdater.on('update-available', () => {
+    console.log('Update available, downloading...');
+  });
+  autoUpdater.on('update-downloaded', () => {
+    console.log('Update downloaded, will install on quit.');
+    // Optional: autoUpdater.quitAndInstall(); // This would force a restart
+  });
+  autoUpdater.on('error', (err) => {
+    console.error('Auto-updater error:', err);
+  });
+
   try {
     autoUpdater.checkForUpdatesAndNotify();
   } catch (err) {
