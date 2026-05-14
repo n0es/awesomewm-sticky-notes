@@ -41,11 +41,7 @@ contextBridge.exposeInMainWorld('api', {
     return arg ? arg.split('=')[1] : null;
   },
   getVersion: () => {
-    try {
-      const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8'));
-      return packageJson.version;
-    } catch (e) {
-      return '1.3.0';
-    }
+    const arg = process.argv.find(a => a.startsWith('--app-version='));
+    return arg ? arg.split('=')[1] : '1.6.2';
   }
 });
