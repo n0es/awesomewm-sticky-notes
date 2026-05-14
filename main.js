@@ -176,11 +176,14 @@ ipcMain.on('show-context-menu', (event) => {
   contextMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
   contextMenuWin.loadFile('context-menu.html');
 
-  // Override WM placement after window appears
+  // Override WM placement after window appears — AwesomeWM centers popups,
+  // so we must force position after it settles (same pattern as note windows)
   contextMenuWin.once('show', () => {
-    if (contextMenuWin && !contextMenuWin.isDestroyed()) {
-      contextMenuWin.setPosition(cursor.x, cursor.y);
-    }
+    setTimeout(() => {
+      if (contextMenuWin && !contextMenuWin.isDestroyed()) {
+        contextMenuWin.setPosition(cursor.x, cursor.y);
+      }
+    }, 50);
   });
 
   contextMenuWin.on('blur', () => closeContextMenu());
