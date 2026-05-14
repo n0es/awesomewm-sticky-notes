@@ -104,7 +104,7 @@ function openNoteWindow(notePath) {
 
   win.on('move', saveState);
   win.on('resize', saveState);
-  win.on('closed', () => {
+  win.on('close', () => {
     const bounds = win.getBounds();
     const currentStates = loadAllWindowStates();
     const currentState = currentStates[notePath] || {};
