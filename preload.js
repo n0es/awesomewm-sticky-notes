@@ -91,5 +91,11 @@ contextBridge.exposeInMainWorld('api', {
   getNoteColor: () => {
     const arg = process.argv.find(a => a.startsWith('--note-color='));
     return arg ? arg.split('=')[1] : '#fdf6e3';
+  },
+  showContextMenu: () => {
+    ipcRenderer.send('show-context-menu');
+  },
+  onContextMenuAction: (callback) => {
+    ipcRenderer.on('context-menu-action', (event, action, data) => callback(action, data));
   }
 });

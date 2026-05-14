@@ -228,123 +228,46 @@ quickOpen.appendChild(searchInput);
 quickOpen.appendChild(noteList);
 document.body.appendChild(quickOpen);
 
-// Context Menu UI
-const contextMenu = document.createElement('div');
-contextMenu.style.cssText = `
-  position: fixed;
-  background: #fdf6e3;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  display: none;
-  flex-direction: column;
-  padding: 5px 0;
-  z-index: 1000;
-  min-width: 150px;
-  font-family: monospace;
-  font-size: 14px;
-`;
-
-function createMenuItem(label, onClick, options = {}) {
-  const item = document.createElement('div');
-  item.textContent = label;
-  item.style.cssText = `
-    padding: 8px 15px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  `;
-  if (options.color) {
-    const dot = document.createElement('span');
-    dot.style.cssText = `
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: ${options.color};
-      border: 1px solid rgba(0,0,0,0.1);
-    `;
-    item.appendChild(dot);
-  }
-  item.onmouseover = () => item.style.background = '#eee';
-  item.onmouseout = () => item.style.background = 'transparent';
-  item.onclick = (e) => {
-    e.stopPropagation();
-    onClick();
-    hideContextMenu();
-  };
-  return item;
-}
-
-const colors = [
-  { name: 'Default', value: '#fdf6e3' },
-  { name: 'Yellow', value: '#fff9c4' },
-  { name: 'Green', value: '#c8e6c9' },
-  { name: 'Blue', value: '#bbdefb' },
-  { name: 'Pink', value: '#f8bbd0' },
-  { name: 'Purple', value: '#e1bee7' }
-];
-
-const divider = () => {
-  const d = document.createElement('div');
-  d.style.cssText = 'height: 1px; background: #ddd; margin: 5px 0;';
-  return d;
-};
-
 // Initial color setup
 const argColor = window.api.getNoteColor();
 const noteEl = document.getElementById('note');
 noteEl.style.background = argColor;
 
-contextMenu.appendChild(createMenuItem('New Note', () => window.api.createNewNote()));
-contextMenu.appendChild(createMenuItem('Open Note...', () => showQuickOpen()));
-contextMenu.appendChild(divider());
-
-colors.forEach(color => {
-  contextMenu.appendChild(createMenuItem(color.name, () => {
-    noteEl.style.background = color.value;
-    window.api.setNoteColor(notePath, color.value);
-  }, { color: color.value }));
-});
-
-contextMenu.appendChild(divider());
-contextMenu.appendChild(createMenuItem('Hide Note', () => window.api.closeNote(notePath)));
-contextMenu.appendChild(createMenuItem('Archive Note', () => {
-  if (confirm('Archive this note? It will be moved to the "archive" folder.')) {
-    window.api.archiveNote(notePath);
-    window.api.closeNote(notePath);
-  }
-}));
-contextMenu.appendChild(createMenuItem('Delete Note', () => {
-  if (confirm('Permanently delete this note?')) {
-    window.api.deleteNote(notePath);
-    window.api.closeNote(notePath);
-  }
-}));
-
-document.body.appendChild(contextMenu);
-
-function showContextMenu(x, y) {
-  contextMenu.style.display = 'flex';
-  contextMenu.style.left = `${x}px`;
-  contextMenu.style.top = `${y}px`;
-  
-  // Ensure it doesn't go off screen
-  const rect = contextMenu.getBoundingClientRect();
-  if (rect.right > window.innerWidth) contextMenu.style.left = `${window.innerWidth - rect.width}px`;
-  if (rect.bottom > window.innerHeight) contextMenu.style.top = `${window.innerHeight - rect.height}px`;
-}
-
-function hideContextMenu() {
-  contextMenu.style.display = 'none';
-}
-
+// Native context menu via Electron Menu API
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
-  showContextMenu(e.clientX, e.clientY);
+  window.api.showContextMenu();
 });
 
-window.addEventListener('click', hideContextMenu);
+window.api.onContextMenuAction((action, data) => {
+  switch (action) {
+    case 'new-note':
+      window.api.createNewNote();
+      break;
+    case 'open-note':
+      showQuickOpen();
+      break;
+    case 'set-color':
+      noteEl.style.background = data;
+      window.api.setNoteColor(notePath, data);
+      break;
+    case 'hide':
+      window.api.closeNote(notePath);
+      break;
+    case 'archive':
+      if (confirm('Archive this note? It will be moved to the "archive" folder.')) {
+        window.api.archiveNote(notePath);
+        window.api.closeNote(notePath);
+      }
+      break;
+    case 'delete':
+      if (confirm('Permanently delete this note?')) {
+        window.api.deleteNote(notePath);
+        window.api.closeNote(notePath);
+      }
+      break;
+  }
+});
 
 let isQuickOpenVisible = false;
 
@@ -390,7 +313,6 @@ searchInput.oninput = updateNoteList;
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (isQuickOpenVisible) hideQuickOpen();
-    if (contextMenu.style.display === 'flex') hideContextMenu();
   }
 });
 

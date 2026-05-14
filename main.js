@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -126,6 +126,34 @@ ipcMain.on('create-new-note', () => {
 ipcMain.on('close-note', (event, filePath) => {
   const win = BrowserWindow.getAllWindows().find(w => w.notePath === filePath);
   if (win) win.close();
+});
+
+const NOTE_COLORS = [
+  { name: 'Default', value: '#fdf6e3' },
+  { name: 'Yellow', value: '#fff9c4' },
+  { name: 'Green', value: '#c8e6c9' },
+  { name: 'Blue', value: '#bbdefb' },
+  { name: 'Pink', value: '#f8bbd0' },
+  { name: 'Purple', value: '#e1bee7' }
+];
+
+ipcMain.on('show-context-menu', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const template = [
+    { label: 'New Note', click: () => event.sender.send('context-menu-action', 'new-note') },
+    { label: 'Open Note...', click: () => event.sender.send('context-menu-action', 'open-note') },
+    { type: 'separator' },
+    ...NOTE_COLORS.map(color => ({
+      label: color.name,
+      click: () => event.sender.send('context-menu-action', 'set-color', color.value)
+    })),
+    { type: 'separator' },
+    { label: 'Hide Note', click: () => event.sender.send('context-menu-action', 'hide') },
+    { label: 'Archive Note', click: () => event.sender.send('context-menu-action', 'archive') },
+    { label: 'Delete Note', click: () => event.sender.send('context-menu-action', 'delete') }
+  ];
+  const menu = Menu.buildFromTemplate(template);
+  menu.popup({ window: win });
 });
 
 ipcMain.on('set-note-color', (event, { filePath, color }) => {
