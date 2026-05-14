@@ -1,6 +1,6 @@
 {
   "name": "sticky-notes",
-  "version": "1.7.8",
+  "version": "1.7.9",
   "description": "A high-performance sticky note app for AwesomeWM on Arch Linux, integrated with Obsidian.",
   "main": "main.js",
   "repository": {

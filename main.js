@@ -61,7 +61,7 @@ function openNoteWindow(notePath) {
 
   if (existingWindow) {
     existingWindow.focus();
-    return;
+    return existingWindow;
   }
 
   const states = loadAllWindowStates();
@@ -78,6 +78,7 @@ function openNoteWindow(notePath) {
     height: state.height,
     x: state.x,
     y: state.y,
+    show: false,
     transparent: true,
     frame: false,
     skipTaskbar: true,
@@ -98,12 +99,13 @@ function openNoteWindow(notePath) {
 
   win.notePath = notePath;
 
-  // Force exact position after the window is ready, in case the WM repositioned it
   win.once('ready-to-show', () => {
     win.setBounds({ x: state.x, y: state.y, width: state.width, height: state.height });
+    win.showInactive();
   });
 
   const saveState = () => {
+    if (win.isDestroyed()) return;
     const bounds = win.getBounds();
     const currentStates = loadAllWindowStates();
     const currentState = currentStates[notePath] || {};
@@ -126,6 +128,7 @@ function openNoteWindow(notePath) {
   });
 
   win.loadFile('index.html');
+  return win;
 }
 
 ipcMain.on('open-note', (event, filePath) => {
@@ -163,11 +166,13 @@ ipcMain.on('show-context-menu', (event) => {
     height: 310,
     x: cursor.x,
     y: cursor.y,
+    show: false,
     frame: false,
     transparent: true,
     skipTaskbar: true,
     resizable: false,
     focusable: true,
+    type: 'utility',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -177,6 +182,13 @@ ipcMain.on('show-context-menu', (event) => {
 
   contextMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
   contextMenuWin.loadFile('context-menu.html');
+
+  contextMenuWin.once('ready-to-show', () => {
+    if (contextMenuWin && !contextMenuWin.isDestroyed()) {
+      contextMenuWin.setBounds({ x: cursor.x, y: cursor.y, width: 180, height: 310 });
+      contextMenuWin.show();
+    }
+  });
 
   contextMenuWin.on('blur', () => closeContextMenu());
   contextMenuWin.on('closed', () => { contextMenuWin = null; });
@@ -231,17 +243,16 @@ if (!gotTheLock) {
 
       if (openNotes.length > 0) {
         sessionRestoring = true;
-        // Open sequentially with delay so WM respects stacking order
-        openNotes.reduce((promise, note, i) => {
-          return promise.then(() => new Promise(resolve => {
-            setTimeout(() => {
-              openNoteWindow(note);
-              resolve();
-            }, i * 150);
-          }));
-        }, Promise.resolve()).then(() => {
+        // Open all windows hidden, then show in z-order
+        const windows = openNotes.map(note => openNoteWindow(note));
+        // After all are ready, focus the topmost (last in sorted order)
+        setTimeout(() => {
+          const topWin = windows[windows.length - 1];
+          if (topWin && !topWin.isDestroyed()) {
+            topWin.focus();
+          }
           sessionRestoring = false;
-        });
+        }, 500);
       } else {
         // Fallback to defaults
         openNoteWindow(path.join(vaultPath, 'sticky_note.md'));
