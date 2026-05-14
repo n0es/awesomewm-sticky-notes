@@ -95,6 +95,9 @@ contextBridge.exposeInMainWorld('api', {
   showContextMenu: (x, y) => {
     ipcRenderer.send('show-context-menu', { x, y });
   },
+  dismissContextMenu: () => {
+    ipcRenderer.send('dismiss-context-menu');
+  },
   onContextMenuAction: (callback) => {
     ipcRenderer.on('context-menu-action', (event, action, data) => callback(action, data));
   }

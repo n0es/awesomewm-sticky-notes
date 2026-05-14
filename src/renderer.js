@@ -233,10 +233,14 @@ const argColor = window.api.getNoteColor();
 const noteEl = document.getElementById('note');
 noteEl.style.background = argColor;
 
-// Native context menu via Electron Menu API
+// Context menu
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   window.api.showContextMenu(e.clientX, e.clientY);
+});
+
+window.addEventListener('click', () => {
+  window.api.dismissContextMenu();
 });
 
 window.api.onContextMenuAction((action, data) => {

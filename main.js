@@ -138,11 +138,15 @@ ipcMain.on('close-note', (event, filePath) => {
 let contextMenuWin = null;
 let contextMenuParent = null;
 
-ipcMain.on('show-context-menu', (event, { x, y }) => {
-  if (contextMenuWin) {
+function closeContextMenu() {
+  if (contextMenuWin && !contextMenuWin.isDestroyed()) {
     contextMenuWin.close();
-    contextMenuWin = null;
   }
+  contextMenuWin = null;
+}
+
+ipcMain.on('show-context-menu', (event, { x, y }) => {
+  closeContextMenu();
 
   contextMenuParent = BrowserWindow.fromWebContents(event.sender);
   const parentBounds = contextMenuParent.getBounds();
@@ -159,6 +163,7 @@ ipcMain.on('show-context-menu', (event, { x, y }) => {
     skipTaskbar: true,
     alwaysOnTop: true,
     resizable: false,
+    focusable: true,
     type: 'utility',
     webPreferences: {
       nodeIntegration: false,
@@ -169,26 +174,19 @@ ipcMain.on('show-context-menu', (event, { x, y }) => {
 
   contextMenuWin.loadFile('context-menu.html');
 
-  contextMenuWin.on('blur', () => {
-    if (contextMenuWin) {
-      contextMenuWin.close();
-      contextMenuWin = null;
-    }
-  });
+  contextMenuWin.on('blur', () => closeContextMenu());
+  contextMenuWin.on('closed', () => { contextMenuWin = null; });
+});
 
-  contextMenuWin.on('closed', () => {
-    contextMenuWin = null;
-  });
+ipcMain.on('dismiss-context-menu', () => {
+  closeContextMenu();
 });
 
 ipcMain.on('context-menu-action', (event, action, data) => {
   if (contextMenuParent && !contextMenuParent.isDestroyed()) {
     contextMenuParent.webContents.send('context-menu-action', action, data);
   }
-  if (contextMenuWin) {
-    contextMenuWin.close();
-    contextMenuWin = null;
-  }
+  closeContextMenu();
   contextMenuParent = null;
 });
 
