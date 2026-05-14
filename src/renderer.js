@@ -160,6 +160,14 @@ function render() {
     });
     y += LINE_HEIGHT / 2; // Extra padding between paragraphs
   }
+
+  // Render version tag
+  const version = window.api.getVersion();
+  ctx.font = '10px monospace';
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.textAlign = 'right';
+  ctx.fillText(`v${version}`, width - 10, height - 10);
+  ctx.textAlign = 'left'; // Reset for next frame
 }
 
 // Watch window size

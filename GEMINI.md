@@ -13,7 +13,11 @@ This document defines the foundational mandates and workflows for this project. 
    - PRs must be merged using `gh pr merge --merge --delete-branch`.
 3. **CI/CD & Releases:**
    - Pushes to `main` trigger a verification build via GitHub Actions.
-   - To trigger a production release and update the AppImage, create and push a version tag:
+   - To trigger a production release and update the AppImage, you MUST first increment the version in `package.json`:
+     ```bash
+     npm version patch  # or minor/major
+     ```
+   - Then, create and push a version tag matching the new version:
      ```bash
      git tag v1.x.x
      git push origin v1.x.x
