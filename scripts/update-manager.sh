@@ -48,7 +48,10 @@ if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
             echo "10"; echo "# Fetching release info..."
             TMP_FILE=$(mktemp)
             echo "30"; echo "# Downloading $LATEST_VERSION..."
-            if gh release download "$LATEST_VERSION" -R "$REPO" -p "StickyNotes-*.AppImage" -O "$TMP_FILE"; then
+
+            # Capture gh error
+            GH_ERROR=$(gh release download "$LATEST_VERSION" -R "$REPO" -p "StickyNotes-*.AppImage" -O "$TMP_FILE" --clobber 2>&1)
+            if [ $? -eq 0 ]; then
                 echo "80"; echo "# Installing..."
                 mv "$TMP_FILE" "$BIN_PATH"
                 chmod +x "$BIN_PATH"
@@ -57,7 +60,7 @@ if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
                 sleep 1
             else
                 echo "100"; echo "# Update failed."
-                zenity --error --text="Update failed. Please check your internet connection."
+                zenity --error --text="Update failed.\n\nError: $GH_ERROR"
                 rm -f "$TMP_FILE"
                 sleep 2
             fi
