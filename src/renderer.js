@@ -186,6 +186,100 @@ window.api.watchNote(notePath, () => {
 const editor = document.getElementById('editor');
 let isEditing = false;
 
+// Quick Open UI
+const quickOpen = document.createElement('div');
+quickOpen.style.cssText = `
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  width: 80%;
+  height: 80%;
+  background: #fdf6e3;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+  display: none;
+  flex-direction: column;
+  padding: 10px;
+  z-index: 100;
+  font-family: monospace;
+`;
+
+const searchInput = document.createElement('input');
+searchInput.placeholder = 'Search notes...';
+searchInput.style.cssText = `
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  margin-bottom: 10px;
+  outline: none;
+`;
+
+const noteList = document.createElement('div');
+noteList.style.cssText = `
+  flex-grow: 1;
+  overflow-y: auto;
+`;
+
+quickOpen.appendChild(searchInput);
+quickOpen.appendChild(noteList);
+document.body.appendChild(quickOpen);
+
+let isQuickOpenVisible = false;
+
+function showQuickOpen() {
+  isQuickOpenVisible = true;
+  quickOpen.style.display = 'flex';
+  searchInput.value = '';
+  updateNoteList();
+  searchInput.focus();
+}
+
+function hideQuickOpen() {
+  isQuickOpenVisible = false;
+  quickOpen.style.display = 'none';
+}
+
+function updateNoteList() {
+  const vaultPath = window.api.getVaultPath();
+  const notes = window.api.listVault(vaultPath);
+  const filter = searchInput.value.toLowerCase();
+  
+  noteList.innerHTML = '';
+  notes.filter(n => n.name.toLowerCase().includes(filter)).forEach(note => {
+    const item = document.createElement('div');
+    item.textContent = note.name;
+    item.style.cssText = `
+      padding: 8px;
+      cursor: pointer;
+      border-radius: 4px;
+    `;
+    item.onmouseover = () => item.style.background = '#eee';
+    item.onmouseout = () => item.style.background = 'transparent';
+    item.onclick = () => {
+      window.api.openNote(note.path);
+      hideQuickOpen();
+    };
+    noteList.appendChild(item);
+  });
+}
+
+searchInput.oninput = updateNoteList;
+
+window.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+    e.preventDefault();
+    if (isQuickOpenVisible) hideQuickOpen();
+    else showQuickOpen();
+  }
+  
+  if (e.key === 'Escape' && isQuickOpenVisible) {
+    hideQuickOpen();
+  }
+});
+
 window.addEventListener('dblclick', () => {
   if (isEditing) return;
   isEditing = true;

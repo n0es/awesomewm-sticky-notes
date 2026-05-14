@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -28,9 +28,9 @@ function loadAllWindowStates() {
   return {};
 }
 
-function saveWindowState(notePath, bounds) {
+function saveWindowState(notePath, bounds, isOpen = true) {
   const states = loadAllWindowStates();
-  states[notePath] = bounds;
+  states[notePath] = { ...bounds, isOpen };
   try {
     if (!fs.existsSync(userDataPath)) {
       fs.mkdirSync(userDataPath, { recursive: true });
@@ -95,14 +95,22 @@ function openNoteWindow(notePath) {
 
   const saveState = () => {
     const bounds = win.getBounds();
-    saveWindowState(notePath, bounds);
+    saveWindowState(notePath, bounds, true);
   };
 
   win.on('move', saveState);
   win.on('resize', saveState);
+  win.on('closed', () => {
+    // Save that it's closed
+    saveWindowState(notePath, win.getBounds(), false);
+  });
 
   win.loadFile('index.html');
 }
+
+ipcMain.on('open-note', (event, filePath) => {
+  openNoteWindow(filePath);
+});
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -125,9 +133,17 @@ if (!gotTheLock) {
     if (notePath) {
       openNoteWindow(notePath);
     } else {
-      // Initial launch with no args: open defaults
-      openNoteWindow(path.join(vaultPath, 'sticky_note.md'));
-      openNoteWindow(path.join(vaultPath, 'todo.md'));
+      // Session restoration: open all notes that were open last time
+      const states = loadAllWindowStates();
+      const openNotes = Object.keys(states).filter(path => states[path].isOpen);
+      
+      if (openNotes.length > 0) {
+        openNotes.forEach(note => openNoteWindow(note));
+      } else {
+        // Fallback to defaults
+        openNoteWindow(path.join(vaultPath, 'sticky_note.md'));
+        openNoteWindow(path.join(vaultPath, 'todo.md'));
+      }
     }
   });
 }

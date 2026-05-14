@@ -1,4 +1,4 @@
-const { contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const chokidar = require('chokidar');
@@ -33,6 +33,22 @@ contextBridge.exposeInMainWorld('api', {
     });
     return () => watcher.close();
   },
+  listVault: (vaultPath) => {
+    try {
+      return fs.readdirSync(vaultPath)
+        .filter(f => f.endsWith('.md'))
+        .map(f => ({ name: f, path: path.join(vaultPath, f) }));
+    } catch (e) {
+      return [];
+    }
+  },
+  openNote: (filePath) => {
+    ipcRenderer.send('open-note', filePath);
+  },
+  getVaultPath: () => {
+    // This could be passed via args or hardcoded
+    return path.join(process.env.HOME, 'obsidian_vault');
+  },
   parseMarkdown: (text) => {
     return marked.lexer(text);
   },
@@ -42,6 +58,6 @@ contextBridge.exposeInMainWorld('api', {
   },
   getVersion: () => {
     const arg = process.argv.find(a => a.startsWith('--app-version='));
-    return arg ? arg.split('=')[1] : '1.6.4';
+    return arg ? arg.split('=')[1] : '1.6.5';
   }
 });
