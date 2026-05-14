@@ -46,8 +46,8 @@ app.whenReady().then(() => {
     console.log('Update available, downloading...');
   });
   autoUpdater.on('update-downloaded', () => {
-    console.log('Update downloaded, will install on quit.');
-    // Optional: autoUpdater.quitAndInstall(); // This would force a restart
+    console.log('Update downloaded, installing now...');
+    autoUpdater.quitAndInstall();
   });
   autoUpdater.on('error', (err) => {
     console.error('Auto-updater error:', err);
