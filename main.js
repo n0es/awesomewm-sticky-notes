@@ -80,6 +80,8 @@ function openNoteWindow(notePath) {
     transparent: true,
     frame: false,
     skipTaskbar: true,
+    alwaysOnTop: true,
+    type: 'utility',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -94,6 +96,11 @@ function openNoteWindow(notePath) {
   });
 
   win.notePath = notePath;
+
+  // Force exact position after the window is ready, in case the WM repositioned it
+  win.once('ready-to-show', () => {
+    win.setBounds({ x: state.x, y: state.y, width: state.width, height: state.height });
+  });
 
   const saveState = () => {
     const bounds = win.getBounds();
