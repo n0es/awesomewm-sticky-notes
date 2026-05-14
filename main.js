@@ -78,7 +78,6 @@ function openNoteWindow(notePath) {
     height: state.height,
     x: state.x,
     y: state.y,
-    show: false,
     transparent: true,
     frame: false,
     skipTaskbar: true,
@@ -98,11 +97,6 @@ function openNoteWindow(notePath) {
   });
 
   win.notePath = notePath;
-
-  win.once('ready-to-show', () => {
-    win.setBounds({ x: state.x, y: state.y, width: state.width, height: state.height });
-    win.showInactive();
-  });
 
   const saveState = () => {
     if (win.isDestroyed()) return;
@@ -166,7 +160,6 @@ ipcMain.on('show-context-menu', (event) => {
     height: 310,
     x: cursor.x,
     y: cursor.y,
-    show: false,
     frame: false,
     transparent: true,
     skipTaskbar: true,
@@ -183,10 +176,10 @@ ipcMain.on('show-context-menu', (event) => {
   contextMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
   contextMenuWin.loadFile('context-menu.html');
 
-  contextMenuWin.once('ready-to-show', () => {
+  // Override WM placement after window appears
+  contextMenuWin.once('show', () => {
     if (contextMenuWin && !contextMenuWin.isDestroyed()) {
-      contextMenuWin.setBounds({ x: cursor.x, y: cursor.y, width: 180, height: 310 });
-      contextMenuWin.show();
+      contextMenuWin.setPosition(cursor.x, cursor.y);
     }
   });
 
@@ -243,16 +236,16 @@ if (!gotTheLock) {
 
       if (openNotes.length > 0) {
         sessionRestoring = true;
-        // Open all windows hidden, then show in z-order
-        const windows = openNotes.map(note => openNoteWindow(note));
-        // After all are ready, focus the topmost (last in sorted order)
+        openNotes.forEach(note => openNoteWindow(note));
+        // Raise the topmost note (last in sorted order) after WM settles
+        const topNotePath = openNotes[openNotes.length - 1];
         setTimeout(() => {
-          const topWin = windows[windows.length - 1];
+          const topWin = BrowserWindow.getAllWindows().find(w => w.notePath === topNotePath);
           if (topWin && !topWin.isDestroyed()) {
             topWin.focus();
           }
           sessionRestoring = false;
-        }, 500);
+        }, 300);
       } else {
         // Fallback to defaults
         openNoteWindow(path.join(vaultPath, 'sticky_note.md'));
