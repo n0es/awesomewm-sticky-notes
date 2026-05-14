@@ -2,7 +2,7 @@ import { materializeRichInlineLineRange, prepareRichInline, walkRichInlineLineRa
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const notePath = '/home/ethan/obsidian_vault/sticky_note.md';
+const notePath = window.api.getNotePath() || '/home/ethan/obsidian_vault/sticky_note.md';
 
 let preparedParagraphs = [];
 const LINE_HEIGHT = 24;
