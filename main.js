@@ -1,6 +1,5 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
-const { autoUpdater } = require('electron-updater');
 const crypto = require('crypto');
 
 // Default note if none provided
@@ -39,25 +38,6 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
-  
-  // Enhanced auto-update logic
-  autoUpdater.logger = console;
-  autoUpdater.on('update-available', () => {
-    console.log('Update available, downloading...');
-  });
-  autoUpdater.on('update-downloaded', () => {
-    console.log('Update downloaded, installing now...');
-    autoUpdater.quitAndInstall();
-  });
-  autoUpdater.on('error', (err) => {
-    console.error('Auto-updater error:', err);
-  });
-
-  try {
-    autoUpdater.checkForUpdatesAndNotify();
-  } catch (err) {
-    console.error('Update check failed:', err);
-  }
 });
 
 app.on('window-all-closed', function () {

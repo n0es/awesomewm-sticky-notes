@@ -28,5 +28,7 @@ This document defines the foundational mandates and workflows for this project. 
 
 - **Text Rendering:** Use `@chenglou/pretext` for all text measurement and layout. Avoid DOM-based measurements.
 - **Styling:** Maintain a monospace aesthetic for the canvas rendering to match the inline editor.
+- **Auto-Updates (Lightweight):** The application does NOT use `electron-updater` internally. Instead, updates are managed by a separate lightweight Bash/Zenity script (`scripts/update-manager.sh`). This script handles version checking via GitHub CLI (`gh`), user notification via `zenity`, and binary replacement.
 - **Obsidian Compatibility:** Ensure the Markdown parser correctly handles Obsidian-specific syntax like `[[links]]`, `#tags`, and task checkboxes.
 - **Environment:** The app is optimized for AwesomeWM on Arch Linux. Maintain frameless, transparent, and floating window properties.
+

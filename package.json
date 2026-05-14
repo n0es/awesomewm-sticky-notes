@@ -46,7 +46,6 @@
   "dependencies": {
     "@chenglou/pretext": "^0.0.7",
     "chokidar": "^5.0.0",
-    "electron-updater": "^6.8.3",
     "marked": "^18.0.3"
   },
   "devDependencies": {
