@@ -231,8 +231,17 @@ if (!gotTheLock) {
 
       if (openNotes.length > 0) {
         sessionRestoring = true;
-        openNotes.forEach(note => openNoteWindow(note));
-        setTimeout(() => { sessionRestoring = false; }, 1000);
+        // Open sequentially with delay so WM respects stacking order
+        openNotes.reduce((promise, note, i) => {
+          return promise.then(() => new Promise(resolve => {
+            setTimeout(() => {
+              openNoteWindow(note);
+              resolve();
+            }, i * 150);
+          }));
+        }, Promise.resolve()).then(() => {
+          sessionRestoring = false;
+        });
       } else {
         // Fallback to defaults
         openNoteWindow(path.join(vaultPath, 'sticky_note.md'));
