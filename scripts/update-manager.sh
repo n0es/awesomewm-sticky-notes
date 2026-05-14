@@ -71,4 +71,10 @@ if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
 fi
 
 echo "Launching app: $BIN_PATH"
-exec "$BIN_PATH" "$@"
+if [ $# -eq 0 ]; then
+    # Default session: open both main notes
+    "$BIN_PATH" "$HOME/obsidian_vault/sticky_note.md" &
+    exec "$BIN_PATH" "$HOME/obsidian_vault/todo.md"
+else
+    exec "$BIN_PATH" "$@"
+fi
