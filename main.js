@@ -179,14 +179,18 @@ ipcMain.on('show-context-menu', (event, screenX, screenY) => {
   contextMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
   contextMenuWin.loadFile('context-menu.html');
 
-  // AwesomeWM auto-centers popups after mapping; fight it with repeated setPosition calls
-  const forcePos = () => {
-    if (contextMenuWin && !contextMenuWin.isDestroyed()) contextMenuWin.setPosition(x, y);
-  };
-  contextMenuWin.once('show', () => {
-    setTimeout(forcePos, 50);
-    setTimeout(forcePos, 150);
-    setTimeout(forcePos, 300);
+  // AwesomeWM centers new windows on map. Override by watching the move event
+  // and immediately snapping back to target position whenever WM moves us.
+  // Guard against setPosition itself triggering move to prevent loops.
+  let correcting = false;
+  contextMenuWin.on('move', () => {
+    if (correcting || !contextMenuWin || contextMenuWin.isDestroyed()) return;
+    const [cx, cy] = contextMenuWin.getPosition();
+    if (cx !== x || cy !== y) {
+      correcting = true;
+      contextMenuWin.setPosition(x, y);
+      setTimeout(() => { correcting = false; }, 32);
+    }
   });
 
   contextMenuWin.on('blur', () => closeContextMenu());
