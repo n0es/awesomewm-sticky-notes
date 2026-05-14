@@ -8,6 +8,7 @@ const userDataPath = path.join(app.getPath('appData'), 'sticky-notes-v2');
 app.setPath('userData', userDataPath);
 
 const stateFilePath = path.join(userDataPath, 'window-states.json');
+let sessionRestoring = false;
 const vaultPath = path.join(app.getPath('home'), 'obsidian_vault');
 
 function getNotePathFromArgv(argv) {
@@ -112,6 +113,7 @@ function openNoteWindow(notePath) {
   win.on('move', saveState);
   win.on('resize', saveState);
   win.on('focus', () => {
+    if (sessionRestoring) return;
     const currentStates = loadAllWindowStates();
     const currentState = currentStates[notePath] || {};
     saveWindowState(notePath, { ...currentState, lastFocused: Date.now() }, true);
@@ -228,7 +230,9 @@ if (!gotTheLock) {
         .sort((a, b) => (states[a].lastFocused || 0) - (states[b].lastFocused || 0));
 
       if (openNotes.length > 0) {
+        sessionRestoring = true;
         openNotes.forEach(note => openNoteWindow(note));
+        setTimeout(() => { sessionRestoring = false; }, 1000);
       } else {
         // Fallback to defaults
         openNoteWindow(path.join(vaultPath, 'sticky_note.md'));
