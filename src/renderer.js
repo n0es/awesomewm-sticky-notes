@@ -236,7 +236,7 @@ noteEl.style.background = argColor;
 // Context menu
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
-  window.api.showContextMenu(e.clientX, e.clientY);
+  window.api.showContextMenu();
 });
 
 window.addEventListener('click', () => {

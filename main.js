@@ -145,26 +145,22 @@ function closeContextMenu() {
   contextMenuWin = null;
 }
 
-ipcMain.on('show-context-menu', (event, { x, y }) => {
+ipcMain.on('show-context-menu', (event) => {
   closeContextMenu();
 
   contextMenuParent = BrowserWindow.fromWebContents(event.sender);
-  const parentBounds = contextMenuParent.getBounds();
-  const menuX = parentBounds.x + x;
-  const menuY = parentBounds.y + y;
+  const cursor = screen.getCursorScreenPoint();
 
   contextMenuWin = new BrowserWindow({
     width: 180,
     height: 310,
-    x: menuX,
-    y: menuY,
+    x: cursor.x,
+    y: cursor.y,
     frame: false,
     transparent: true,
     skipTaskbar: true,
-    alwaysOnTop: true,
     resizable: false,
     focusable: true,
-    type: 'utility',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -172,6 +168,7 @@ ipcMain.on('show-context-menu', (event, { x, y }) => {
     }
   });
 
+  contextMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
   contextMenuWin.loadFile('context-menu.html');
 
   contextMenuWin.on('blur', () => closeContextMenu());
