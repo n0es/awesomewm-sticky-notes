@@ -140,7 +140,7 @@ let contextMenuParent = null;
 
 function closeContextMenu() {
   if (contextMenuWin && !contextMenuWin.isDestroyed()) {
-    contextMenuWin.close();
+    contextMenuWin.destroy();
   }
   contextMenuWin = null;
 }
