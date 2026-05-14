@@ -68,7 +68,8 @@ function openNoteWindow(notePath) {
     width: 400,
     height: 400,
     x: 100 + (Math.floor(Math.random() * 5) * 50),
-    y: 100 + (Math.floor(Math.random() * 5) * 50)
+    y: 100 + (Math.floor(Math.random() * 5) * 50),
+    color: '#fdf6e3'
   };
 
   const win = new BrowserWindow({
@@ -86,7 +87,8 @@ function openNoteWindow(notePath) {
       sandbox: false,
       additionalArguments: [
         `--note-path=${notePath}`,
-        `--app-version=${app.getVersion()}`
+        `--app-version=${app.getVersion()}`,
+        `--note-color=${state.color || '#fdf6e3'}`
       ]
     }
   });
@@ -95,14 +97,18 @@ function openNoteWindow(notePath) {
 
   const saveState = () => {
     const bounds = win.getBounds();
-    saveWindowState(notePath, bounds, true);
+    const currentStates = loadAllWindowStates();
+    const currentState = currentStates[notePath] || {};
+    saveWindowState(notePath, { ...currentState, ...bounds }, true);
   };
 
   win.on('move', saveState);
   win.on('resize', saveState);
   win.on('closed', () => {
-    // Save that it's closed
-    saveWindowState(notePath, win.getBounds(), false);
+    const bounds = win.getBounds();
+    const currentStates = loadAllWindowStates();
+    const currentState = currentStates[notePath] || {};
+    saveWindowState(notePath, { ...currentState, ...bounds }, false);
   });
 
   win.loadFile('index.html');
@@ -110,6 +116,24 @@ function openNoteWindow(notePath) {
 
 ipcMain.on('open-note', (event, filePath) => {
   openNoteWindow(filePath);
+});
+
+ipcMain.on('create-new-note', () => {
+  const newNotePath = createNewNoteFile();
+  openNoteWindow(newNotePath);
+});
+
+ipcMain.on('close-note', (event, filePath) => {
+  const win = BrowserWindow.getAllWindows().find(w => w.notePath === filePath);
+  if (win) win.close();
+});
+
+ipcMain.on('set-note-color', (event, { filePath, color }) => {
+  const states = loadAllWindowStates();
+  if (states[filePath]) {
+    states[filePath].color = color;
+    saveWindowState(filePath, states[filePath], states[filePath].isOpen);
+  }
 });
 
 const gotTheLock = app.requestSingleInstanceLock();

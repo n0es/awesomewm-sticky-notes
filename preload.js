@@ -52,12 +52,40 @@ contextBridge.exposeInMainWorld('api', {
   parseMarkdown: (text) => {
     return marked.lexer(text);
   },
+  archiveNote: (filePath) => {
+    try {
+      const archiveDir = path.join(path.dirname(filePath), 'archive');
+      if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir);
+      const dest = path.join(archiveDir, path.basename(filePath));
+      fs.renameSync(filePath, dest);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+  deleteNote: (filePath) => {
+    try {
+      fs.unlinkSync(filePath);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+  setNoteColor: (filePath, color) => {
+    ipcRenderer.send('set-note-color', { filePath, color });
+  },
+  closeNote: (filePath) => {
+    ipcRenderer.send('close-note', filePath);
+  },
+  createNewNote: () => {
+    ipcRenderer.send('create-new-note');
+  },
   getNotePath: () => {
     const arg = process.argv.find(a => a.startsWith('--note-path='));
     return arg ? arg.split('=')[1] : null;
   },
   getVersion: () => {
     const arg = process.argv.find(a => a.startsWith('--app-version='));
-    return arg ? arg.split('=')[1] : '1.6.5';
+    return arg ? arg.split('=')[1] : '1.6.6';
   }
 });
