@@ -98,8 +98,11 @@ function openNoteWindow(notePath) {
 
   win.notePath = notePath;
 
+  // Block position saving until after WM has settled and we've restored position
+  let initialized = false;
+
   const saveState = () => {
-    if (win.isDestroyed()) return;
+    if (!initialized || win.isDestroyed()) return;
     const bounds = win.getBounds();
     const currentStates = loadAllWindowStates();
     const currentState = currentStates[notePath] || {};
@@ -119,6 +122,21 @@ function openNoteWindow(notePath) {
     const currentStates = loadAllWindowStates();
     const currentState = currentStates[notePath] || {};
     saveWindowState(notePath, { ...currentState, ...bounds }, false);
+  });
+
+  // Override WM placement after window appears, then enable position saving
+  win.once('show', () => {
+    setTimeout(() => {
+      if (win.isDestroyed()) return;
+      if (state.x !== undefined && state.y !== undefined) {
+        win.setPosition(state.x, state.y);
+      }
+      if (state.width && state.height) {
+        win.setSize(state.width, state.height);
+      }
+      // Allow WM to finish processing before enabling save
+      setTimeout(() => { initialized = true; }, 100);
+    }, 50);
   });
 
   win.loadFile('index.html');
