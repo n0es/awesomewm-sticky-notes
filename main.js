@@ -149,17 +149,20 @@ function closeContextMenu() {
   contextMenuWin = null;
 }
 
-ipcMain.on('show-context-menu', (event) => {
+ipcMain.on('show-context-menu', (event, screenX, screenY) => {
   closeContextMenu();
 
   contextMenuParent = BrowserWindow.fromWebContents(event.sender);
-  const cursor = screen.getCursorScreenPoint();
+  // Prefer coordinates from renderer (exact click position); fall back to cursor query
+  const fallback = screen.getCursorScreenPoint();
+  const x = (screenX != null) ? screenX : fallback.x;
+  const y = (screenY != null) ? screenY : fallback.y;
 
   contextMenuWin = new BrowserWindow({
     width: 180,
     height: 310,
-    x: cursor.x,
-    y: cursor.y,
+    x,
+    y,
     frame: false,
     transparent: true,
     skipTaskbar: true,
@@ -176,14 +179,14 @@ ipcMain.on('show-context-menu', (event) => {
   contextMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
   contextMenuWin.loadFile('context-menu.html');
 
-  // Override WM placement after window appears — AwesomeWM centers popups,
-  // so we must force position after it settles (same pattern as note windows)
+  // AwesomeWM auto-centers popups after mapping; fight it with repeated setPosition calls
+  const forcePos = () => {
+    if (contextMenuWin && !contextMenuWin.isDestroyed()) contextMenuWin.setPosition(x, y);
+  };
   contextMenuWin.once('show', () => {
-    setTimeout(() => {
-      if (contextMenuWin && !contextMenuWin.isDestroyed()) {
-        contextMenuWin.setPosition(cursor.x, cursor.y);
-      }
-    }, 50);
+    setTimeout(forcePos, 50);
+    setTimeout(forcePos, 150);
+    setTimeout(forcePos, 300);
   });
 
   contextMenuWin.on('blur', () => closeContextMenu());

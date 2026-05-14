@@ -92,8 +92,8 @@ contextBridge.exposeInMainWorld('api', {
     const arg = process.argv.find(a => a.startsWith('--note-color='));
     return arg ? arg.split('=')[1] : '#fdf6e3';
   },
-  showContextMenu: () => {
-    ipcRenderer.send('show-context-menu');
+  showContextMenu: (x, y) => {
+    ipcRenderer.send('show-context-menu', x, y);
   },
   dismissContextMenu: () => {
     ipcRenderer.send('dismiss-context-menu');
