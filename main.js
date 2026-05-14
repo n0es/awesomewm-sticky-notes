@@ -111,6 +111,11 @@ function openNoteWindow(notePath) {
 
   win.on('move', saveState);
   win.on('resize', saveState);
+  win.on('focus', () => {
+    const currentStates = loadAllWindowStates();
+    const currentState = currentStates[notePath] || {};
+    saveWindowState(notePath, { ...currentState, lastFocused: Date.now() }, true);
+  });
   win.on('close', () => {
     const bounds = win.getBounds();
     const currentStates = loadAllWindowStates();
@@ -218,8 +223,10 @@ if (!gotTheLock) {
     } else {
       // Session restoration: open all notes that were open last time
       const states = loadAllWindowStates();
-      const openNotes = Object.keys(states).filter(path => states[path].isOpen);
-      
+      const openNotes = Object.keys(states)
+        .filter(p => states[p].isOpen)
+        .sort((a, b) => (states[a].lastFocused || 0) - (states[b].lastFocused || 0));
+
       if (openNotes.length > 0) {
         openNotes.forEach(note => openNoteWindow(note));
       } else {
